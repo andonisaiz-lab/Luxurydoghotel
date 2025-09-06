@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuxuryDogHotel App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f9;
+        }
+        .app-container {
+            max-width: 420px;
+            margin: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+        }
+        .app-video {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center">
+
+    <div class="app-container bg-white rounded-xl overflow-hidden relative">
+
+        <!-- Header -->
+        <header class="bg-[#1e293b] text-white p-4 shadow-md sticky top-0 z-10 flex justify-between items-center">
+            <h1 class="text-xl font-bold">LuxuryDogHotel</h1>
+            <button id="profile-button" class="text-white text-lg rounded-full w-8 h-8 flex items-center justify-center hover:text-gray-300 transition-colors" title="Andoni Saiz">
+                <i class="fas fa-user-circle"></i>
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main id="app-content" class="flex-grow p-4 overflow-y-auto">
+            <!-- Content will be rendered here based on the active tab -->
+        </main>
+
+        <!-- Navigation Bar -->
+        <nav class="bg-white p-4 border-t border-gray-200 sticky bottom-0 z-10">
+            <ul class="flex justify-around items-center text-gray-600">
+                <li>
+                    <button id="home-tab" class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-home text-lg"></i>
+                        <span class="text-xs mt-1">Inicio</span>
+                    </button>
+                </li>
+                <li>
+                    <button id="bookings-tab" class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-calendar-alt text-lg"></i>
+                        <span class="text-xs mt-1">Reservas</span>
+                    </button>
+                </li>
+                <li>
+                    <button id="store-tab" class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-shopping-bag text-lg"></i>
+                        <span class="text-xs mt-1">Tienda</span>
+                    </button>
+                </li>
+                <li>
+                    <button id="orders-tab" class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-box-open text-lg"></i>
+                        <span class="text-xs mt-1">Pedidos</span>
+                    </button>
+                </li>
+                <li>
+                    <button id="camera-tab" class="flex flex-col items-center p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <i class="fas fa-video text-lg"></i>
+                        <span class="text-xs mt-1">Cámaras</span>
+                    </button>
+                </li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Modal for Messages -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-6 rounded-xl shadow-lg w-11/12 max-w-xs text-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Mensaje</h3>
+            <p id="modal-message" class="text-gray-600 mb-4">¡Reserva confirmada!</p>
+            <button id="modal-close-button" class="bg-[#4f46e5] text-white py-2 px-4 rounded-full font-semibold hover:bg-[#4338ca] transition-colors">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const appContent = document.getElementById('app-content');
+            const homeTab = document.getElementById('home-tab');
+            const bookingsTab = document.getElementById('bookings-tab');
+            const storeTab = document.getElementById('store-tab');
+            const ordersTab = document.getElementById('orders-tab');
+            const cameraTab = document.getElementById('camera-tab');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalMessage = document.getElementById('modal-message');
+            const modalCloseButton = document.getElementById('modal-close-button');
+
+            // --- Modal Functions ---
+            const showModal = (message) => {
+                modalMessage.textContent = message;
+                modalOverlay.classList.remove('hidden');
+            };
+
+            modalCloseButton.addEventListener('click', () => {
+                modalOverlay.classList.add('hidden');
+            });
+
+            // --- Data Simulation ---
+            const mockBookings = [
+                { id: 1, service: 'Estancia en Residencia', pet: 'Boby', startDate: '2025-09-26', endDate: '2025-09-28', status: 'Confirmada' },
+                { id: 2, service: 'Peluquería Canina', pet: 'Luna', startDate: '2024-11-15', endDate: '2024-11-15', status: 'Finalizada' },
+            ];
+
+            const mockProducts = [
+                { id: 1, name: 'Pienso Premium', price: 45.99, image: 'https://galgoscar.com/1851-medium_default/pienso-premium-selection-elite-18kg.jpg' },
+                { id: 2, name: 'Juguete Interactivo', price: 15.50, image: 'https://m.media-amazon.com/images/I/71-EQwqEy7L._UF894,1000_QL80_.jpg' },
+                { id: 3, name: 'Correa de Cuero', price: 29.99, image: 'https://mi-bulldog-frances.es/images/stories/virtuemart/product/clasica-y-elegante-correa-de-cuero-perro-l13st.jpg' },
+                { id: 4, name: 'Snacks Saludables', price: 8.75, image: 'https://m.media-amazon.com/images/I/71sgq4JplfL.jpg' },
+            ];
+
+            let cartItems = []; // Simulación de carrito de compras
+            let paidOrders = [
+                { id: 1, date: '2024-10-25', total: 50.49, status: 'Enviado', items: [{ name: 'Juguete Interactivo', quantity: 2 }] },
+                { id: 2, date: '2024-09-20', total: 45.99, status: 'Entregado', items: [{ name: 'Pienso Premium', quantity: 1 }] }
+            ];
+
+            // --- Render Functions ---
+            const renderHomePage = () => {
+                appContent.innerHTML = `
+                    <div class="space-y-6">
+                        <div class="relative p-6 rounded-xl shadow-inner text-center overflow-hidden h-48 flex items-center justify-center">
+                            <img src="https://i.imgur.com/TWI42G2.jpeg" alt="LuxuryDogHotel" class="absolute inset-0 w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black opacity-40"></div>
+                            <div class="relative z-10 text-white">
+                                <h2 class="text-2xl font-bold">¡Bienvenido a LuxuryDogHotel!</h2>
+                                <p class="mt-2 text-sm">La mejor experiencia para tu mejor amigo.</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800">Próximas Reservas</h3>
+                            <p class="text-sm text-gray-500 mt-1">Tienes 1 reserva confirmada.</p>
+                            <div class="mt-4 p-4 bg-purple-100 border-l-4 border-purple-500 rounded-lg">
+                                <p class="font-bold text-purple-800">Estancia de Boby</p>
+                                <p class="text-sm text-purple-700">Del 26/09/2025 al 28/09/2025</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800">Servicios Destacados</h3>
+                            <p class="text-sm text-gray-500 mt-1">Explora lo que ofrecemos.</p>
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <button class="service-button p-4 bg-orange-100 rounded-lg text-center font-semibold text-orange-800 hover:bg-orange-200 transition-colors" data-service="residencia">
+                                    <i class="fas fa-hotel text-2xl mb-2"></i>
+                                    <p>Residencia</p>
+                                </button>
+                                <button class="service-button p-4 bg-purple-100 rounded-lg text-center font-semibold text-purple-800 hover:bg-purple-200 transition-colors" data-service="guarderia">
+                                    <i class="fas fa-door-open text-2xl mb-2"></i>
+                                    <p>Guardería</p>
+                                </button>
+                                <button class="service-button p-4 bg-yellow-100 rounded-lg text-center font-semibold text-yellow-800 hover:bg-yellow-200 transition-colors" data-service="transporte">
+                                    <i class="fas fa-bus text-2xl mb-2"></i>
+                                    <p>Transporte</p>
+                                </button>
+                                <button class="service-button p-4 bg-blue-100 rounded-lg text-center font-semibold text-blue-800 hover:bg-blue-200 transition-colors" data-service="adiestramiento">
+                                    <i class="fas fa-dog text-2xl mb-2"></i>
+                                    <p>Adiestramiento</p>
+                                </button>
+                                <button class="service-button p-4 bg-green-100 rounded-lg text-center font-semibold text-green-800 hover:bg-green-200 transition-colors" data-service="peluqueria">
+                                    <i class="fas fa-paw text-2xl mb-2"></i>
+                                    <p>Peluquería</p>
+                                </button>
+                                <button class="service-button p-4 bg-red-100 rounded-lg text-center font-semibold text-red-800 hover:bg-red-200 transition-colors" data-service="veterinaria">
+                                    <i class="fas fa-stethoscope text-2xl mb-2"></i>
+                                    <p>Veterinaria</p>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800">Conoce LuxuryDogHotel</h3>
+                            <div class="relative w-full aspect-video rounded-xl overflow-hidden mt-4 shadow-sm">
+                                <iframe class="app-video" src="https://www.youtube.com/embed/RWeXt_QJjuo?autoplay=1&loop=1&playlist=RWeXt_QJjuo&start=3&mute=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.querySelectorAll('.service-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const service = e.currentTarget.dataset.service;
+                        renderServicePage(service);
+                    });
+                });
+            };
+
+            const renderServicePage = (service) => {
+                let title = '';
+                let content = '';
+                let imageUrl = '';
+
+                const serviceContent = {
+                    residencia: {
+                        title: 'Residencia Canina',
+                        description: 'Un hotel para perros con instalaciones climatizadas, vigilancia 24 horas, limpieza continua, alimentación premium personalizada, y amplios espacios para paseos y diversión.',
+                        info: 'Para estancias prolongadas o más de un perro, disponemos de tarifas especiales. No dude en consultarnos para más información o para realizar su reserva.',
+                        image: 'https://mivet.com/wp-content/uploads/fly-images/1282/perrete-28-1740x1060-c.png'
+                    },
+                    guarderia: {
+                        title: 'Guardería',
+                        description: '¡No dejes que tu perro se aburra en casa, tráelo a la guardería de perros de LuxuryDogHotel!',
+                        info: 'Todos los días de lunes a viernes de 8:00h a 20:00h. Todos los cuidadores son ATV (Aux. Técnico Veterinario), educador canino, veterinarios o profesionales del sector con experiencia profesional.',
+                        image: 'https://images.pexels.com/photos/33743626/pexels-photo-33743626.jpeg'
+                    },
+                    transporte: {
+                        title: 'Transporte',
+                        description: 'Servicio de recogida / entrega a domicilio en Madrid.',
+                        info: `
+                            <ul class="list-disc list-inside space-y-2">
+                                <li>Destinos hasta 40km: 30€/perro.</li>
+                                <li>Destinos entre 40km y 60km: 35€/perro.</li>
+                                <li>Destinos entre 60km y 65km: 40€/perro.</li>
+                                <li>Destinos superiores a 65km: Consultar.</li>
+                                <li>*Perro adicional: 5€.</li>
+                                <li>*El transporte conlleva el pago del día de estancia.</li>
+                                <li>*Transportes de lunes a viernes laborales.</li>
+                            </ul>
+                        `,
+                        image: 'https://adopcionesaucma.com/wp-content/uploads/2015/11/perros-bus.jpg'
+                    },
+                    adiestramiento: {
+                        title: 'Adiestramiento Canino',
+                        description: 'Nuestros adiestradores profesionales te ayudarán a educar a tu perro. Ofrecemos cursos básicos y avanzados para todos los niveles.',
+                        info: '¡Reserva una sesión de prueba!',
+                        image: 'https://www.naturalgos.net/wp-content/uploads/2023/05/destacada-semana-1.jpg'
+                    },
+                    peluqueria: {
+                        title: 'Peluquería Canina',
+                        description: 'Servicios de estética y cuidado para tu mascota, incluyendo baños, cortes de pelo y tratamientos de hidratación.',
+                        info: '¡Pide tu cita!',
+                        image: 'https://bks-prd-5-global-wp-new-blog.storage.googleapis.com/wp-content/uploads/2021/11/20101856/img-Lo-sabias-todo-sobre-la-peluqueria-canina.jpg'
+                    },
+                    veterinaria: {
+                        title: 'Servicio de Veterinaria',
+                        description: 'Atención veterinaria integral para nuestros huéspedes, con consultas de rutina y atención en caso de emergencia.',
+                        info: 'Contamos con profesionales titulados para garantizar la salud de tu mascota.',
+                        image: 'https://images.pexels.com/photos/6235240/pexels-photo-6235240.jpeg'
+                    }
+                };
+
+                const data = serviceContent[service];
+                title = data.title;
+                content = `
+                    <div class="flex items-center space-x-4 mb-4">
+                        <button id="back-button" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left text-2xl"></i></button>
+                        <h2 class="text-2xl font-bold text-[#1e293b]">${title}</h2>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-md">
+                        <p class="text-gray-600 mb-4">${data.description}</p>
+                        <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                            <p class="text-gray-700">${data.info}</p>
+                        </div>
+                    </div>
+                `;
+                
+                if (data.image) {
+                    content = `
+                        <div class="flex items-center space-x-4 mb-4">
+                            <button id="back-button" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left text-2xl"></i></button>
+                            <h2 class="text-2xl font-bold text-[#1e293b]">${title}</h2>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-md">
+                            <p class="text-gray-600 mb-4">${data.description}</p>
+                            <div class="mt-6 p-4 bg-gray-100 rounded-lg">
+                                <p class="text-gray-700">${data.info}</p>
+                            </div>
+                            <div class="mt-6">
+                                <img src="${data.image}" alt="${title}" class="w-full h-48 object-cover rounded-lg shadow-md">
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                appContent.innerHTML = content;
+                document.getElementById('back-button').addEventListener('click', renderHomePage);
+            };
+
+            const renderBookingsPage = () => {
+                appContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Mis Reservas</h2>
+                    <div class="space-y-4">
+                        ${mockBookings.map(booking => `
+                            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 ${booking.status === 'Confirmada' ? 'border-green-500' : 'border-gray-400'}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-800">${booking.service}</h3>
+                                    <span class="text-sm font-bold text-white px-2 py-1 rounded-full ${booking.status === 'Confirmada' ? 'bg-green-500' : 'bg-gray-400'}">${booking.status}</span>
+                                </div>
+                                <p class="text-gray-600">Mascota: <span class="font-semibold">${booking.pet}</span></p>
+                                <p class="text-sm text-gray-500 mt-1">Fecha: ${booking.startDate} - ${booking.endDate}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button id="new-booking-button" class="mt-6 w-full py-3 bg-[#4f46e5] text-white rounded-full font-bold shadow-lg hover:bg-[#4338ca] transition-colors">
+                        <i class="fas fa-plus mr-2"></i> Nueva Reserva
+                    </button>
+                `;
+                document.getElementById('new-booking-button').addEventListener('click', renderNewBookingForm);
+            };
+
+            const renderNewBookingForm = () => {
+                appContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Nueva Reserva</h2>
+                    <form id="booking-form" class="space-y-4">
+                        <div>
+                            <label for="pet-name" class="block text-sm font-medium text-gray-700">Nombre de la Mascota</label>
+                            <input type="text" id="pet-name" name="pet-name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border" placeholder="Ej. Boby" required>
+                        </div>
+                        <div>
+                            <label for="service-type" class="block text-sm font-medium text-gray-700">Tipo de Servicio</label>
+                            <select id="service-type" name="service-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border" required>
+                                <option value="">Selecciona un servicio</option>
+                                <option value="Residencia">Residencia Canina</option>
+                                <option value="Guarderia">Guardería</option>
+                                <option value="Transporte">Servicio de Transporte</option>
+                                <option value="Adiestramiento">Curso de Adiestramiento</option>
+                                <option value="Peluqueria">Peluquería Canina</option>
+                                <option value="Veterinaria">Consulta Veterinaria</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700">Fecha de Inicio</label>
+                            <input type="date" id="start-date" name="start-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border" required>
+                        </div>
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700">Fecha de Fin</label>
+                            <input type="date" id="end-date" name="end-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 p-2 border" required>
+                        </div>
+                        <button type="submit" class="w-full py-3 bg-purple-500 text-white rounded-full font-bold shadow-lg hover:bg-purple-600 transition-colors">
+                            Confirmar Reserva
+                        </button>
+                        <button type="button" id="cancel-booking-button" class="w-full py-2 text-gray-500 rounded-full font-semibold hover:text-gray-700 transition-colors">
+                            Cancelar
+                        </button>
+                    </form>
+                `;
+                document.getElementById('booking-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    showModal("¡Reserva creada con éxito!");
+                    setTimeout(renderBookingsPage, 1000); // Vuelve a la página de reservas después de 1 segundo
+                });
+                document.getElementById('cancel-booking-button').addEventListener('click', renderBookingsPage);
+            };
+
+            const renderStorePage = () => {
+                appContent.innerHTML = `
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-[#1e293b]">Tienda</h2>
+                        <button id="view-cart-button" class="bg-pink-500 text-white p-2 rounded-full font-semibold text-sm shadow-md hover:bg-pink-600 transition-colors relative">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span id="cart-item-count" class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full text-xs w-4 h-4 flex items-center justify-center">${cartItems.reduce((total, item) => total + item.quantity, 0)}</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        ${mockProducts.map(product => `
+                            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                                <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                                <div class="p-4">
+                                    <h3 class="font-semibold text-gray-800">${product.name}</h3>
+                                    <p class="text-gray-600 mt-1 font-bold">${product.price} €</p>
+                                    <button class="add-to-cart-button mt-3 w-full py-2 bg-pink-500 text-white rounded-full font-semibold text-sm hover:bg-pink-600 transition-colors" data-product-id="${product.id}">
+                                        Añadir al carrito
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                document.querySelectorAll('.add-to-cart-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const productId = parseInt(e.target.getAttribute('data-product-id'));
+                        const existingItem = cartItems.find(item => item.id === productId);
+                        if (existingItem) {
+                            existingItem.quantity += 1;
+                        } else {
+                            const product = mockProducts.find(p => p.id === productId);
+                            cartItems.push({...product, quantity: 1});
+                        }
+                        updateCartCount();
+                        showModal(`"${mockProducts.find(p => p.id === productId).name}" añadido al carrito.`);
+                    });
+                });
+                document.getElementById('view-cart-button').addEventListener('click', renderCartPage);
+            };
+
+            const updateCartCount = () => {
+                const count = cartItems.reduce((total, item) => total + item.quantity, 0);
+                const cartCountElement = document.getElementById('cart-item-count');
+                if (cartCountElement) {
+                    cartCountElement.textContent = count;
+                }
+            };
+
+            const renderCartPage = () => {
+                const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+                
+                appContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Mi Carrito</h2>
+                    ${cartItems.length > 0 ? `
+                        <div class="space-y-4">
+                            ${cartItems.map(item => `
+                                <div class="bg-white p-4 rounded-xl shadow-md flex items-center gap-4">
+                                    <img src="${item.image}" alt="${item.name}" class="w-16 h-16 rounded-lg object-cover">
+                                    <div class="flex-grow">
+                                        <h3 class="font-semibold text-gray-800">${item.name}</h3>
+                                        <p class="text-gray-600 mt-1 font-bold">${(item.price * item.quantity).toFixed(2)} €</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2 text-gray-600">
+                                        <button class="remove-from-cart-button" data-product-id="${item.id}"><i class="fas fa-minus-circle"></i></button>
+                                        <span>${item.quantity}</span>
+                                        <button class="add-more-to-cart-button" data-product-id="${item.id}"><i class="fas fa-plus-circle"></i></button>
+                                    </div>
+                                    <button class="delete-item-button" data-product-id="${item.id}"><i class="fas fa-trash-alt text-red-500"></i></button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="mt-6 p-4 bg-gray-100 rounded-xl">
+                            <div class="flex justify-between font-bold text-lg">
+                                <span>Total:</span>
+                                <span>${total} €</span>
+                            </div>
+                        </div>
+                        <button id="checkout-button" class="mt-6 w-full py-3 bg-green-500 text-white rounded-full font-bold shadow-lg hover:bg-green-600 transition-colors">
+                            Proceder al Pago
+                        </button>
+                    ` : `
+                        <div class="text-center p-10 bg-gray-50 rounded-xl shadow-inner">
+                            <i class="fas fa-shopping-cart text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 font-semibold">Tu carrito está vacío.</p>
+                        </div>
+                    `}
+                    <button id="back-to-store-button" class="mt-4 w-full py-2 text-gray-500 rounded-full font-semibold hover:text-gray-700 transition-colors">
+                        Volver a la Tienda
+                    </button>
+                `;
+                document.getElementById('back-to-store-button').addEventListener('click', renderStorePage);
+                if (cartItems.length > 0) {
+                    document.getElementById('checkout-button').addEventListener('click', renderPaymentPage);
+                }
+
+                document.querySelectorAll('.delete-item-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const productId = parseInt(e.currentTarget.dataset.productId);
+                        cartItems = cartItems.filter(item => item.id !== productId);
+                        updateCartCount();
+                        renderCartPage();
+                    });
+                });
+
+                document.querySelectorAll('.remove-from-cart-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const productId = parseInt(e.currentTarget.dataset.productId);
+                        const existingItem = cartItems.find(item => item.id === productId);
+                        if (existingItem && existingItem.quantity > 1) {
+                            existingItem.quantity -= 1;
+                        } else {
+                            cartItems = cartItems.filter(item => item.id !== productId);
+                        }
+                        updateCartCount();
+                        renderCartPage();
+                    });
+                });
+
+                document.querySelectorAll('.add-more-to-cart-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const productId = parseInt(e.currentTarget.dataset.productId);
+                        const existingItem = cartItems.find(item => item.id === productId);
+                        if (existingItem) {
+                            existingItem.quantity += 1;
+                        } else {
+                            const product = mockProducts.find(p => p.id === productId);
+                            cartItems.push({ ...product, quantity: 1 });
+                        }
+                        updateCartCount();
+                        renderCartPage();
+                    });
+                });
+            };
+
+            const renderPaymentPage = () => {
+                const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+                appContent.innerHTML = `
+                    <div class="flex items-center space-x-4 mb-4">
+                        <button id="back-to-cart-button" class="text-gray-600 hover:text-gray-800"><i class="fas fa-arrow-left text-2xl"></i></button>
+                        <h2 class="text-2xl font-bold text-[#1e293b]">Pago</h2>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white p-5 rounded-xl shadow-md">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Opciones de Pago</h3>
+                            <div class="space-y-4">
+                                <button id="pay-with-card-button" class="w-full py-3 border border-gray-300 rounded-lg flex items-center justify-center gap-2 font-semibold text-gray-700 hover:bg-gray-100 transition-colors">
+                                    <i class="fas fa-credit-card"></i> Pagar con Tarjeta
+                                </button>
+                                <button id="pay-with-paypal-button" class="w-full py-3 bg-blue-700 text-white rounded-lg flex items-center justify-center gap-2 font-semibold hover:bg-blue-800 transition-colors">
+                                    <i class="fab fa-paypal"></i> Pagar con PayPal
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="card-form-container" class="bg-white p-5 rounded-xl shadow-md hidden">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Información de la Tarjeta</h3>
+                            <form id="card-payment-form" class="space-y-4">
+                                <div>
+                                    <label for="card-number" class="block text-sm font-medium text-gray-700">Número de Tarjeta</label>
+                                    <input type="text" id="card-number" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" placeholder="XXXX XXXX XXXX XXXX" required>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div class="w-1/2">
+                                        <label for="expiry-date" class="block text-sm font-medium text-gray-700">Vencimiento</label>
+                                        <input type="text" id="expiry-date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" placeholder="MM/AA" required>
+                                    </div>
+                                    <div class="w-1/2">
+                                        <label for="cvc" class="block text-sm font-medium text-gray-700">CVC</label>
+                                        <input type="text" id="cvc" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" placeholder="XXX" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-green-500 text-white rounded-full font-bold shadow-lg hover:bg-green-600 transition-colors">
+                                    Pagar Ahora
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('back-to-cart-button').addEventListener('click', renderCartPage);
+                
+                const payWithCardButton = document.getElementById('pay-with-card-button');
+                const cardFormContainer = document.getElementById('card-form-container');
+
+                payWithCardButton.addEventListener('click', () => {
+                    cardFormContainer.classList.remove('hidden');
+                });
+                
+                document.getElementById('card-payment-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    showModal('¡Pago con tarjeta completado!');
+                    const orderId = paidOrders.length + 1;
+                    const orderDate = new Date().toISOString().slice(0, 10);
+                    const orderTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+                    paidOrders.push({
+                        id: orderId,
+                        date: orderDate,
+                        total: orderTotal,
+                        status: 'En Proceso',
+                        items: cartItems.map(item => ({ name: item.name, quantity: item.quantity }))
+                    });
+                    cartItems = [];
+                    setTimeout(renderOrdersPage, 1000);
+                });
+                
+                document.getElementById('pay-with-paypal-button').addEventListener('click', () => {
+                    showModal('Redirigiendo a PayPal para completar el pago...');
+                    const orderId = paidOrders.length + 1;
+                    const orderDate = new Date().toISOString().slice(0, 10);
+                    const orderTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0).toFixed(2);
+                    paidOrders.push({
+                        id: orderId,
+                        date: orderDate,
+                        total: orderTotal,
+                        status: 'En Proceso',
+                        items: cartItems.map(item => ({ name: item.name, quantity: item.quantity }))
+                    });
+                    cartItems = [];
+                    setTimeout(renderOrdersPage, 1000);
+                });
+            };
+
+            const renderOrdersPage = () => {
+                appContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Mis Pedidos</h2>
+                    <div class="space-y-4">
+                        ${paidOrders.length > 0 ? paidOrders.map(order => `
+                            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 ${order.status === 'Entregado' ? 'border-green-500' : 'border-blue-500'}">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-800">Pedido #${order.id}</h3>
+                                    <span class="text-sm font-bold text-white px-2 py-1 rounded-full ${order.status === 'Entregado' ? 'bg-green-500' : 'bg-blue-500'}">${order.status}</span>
+                                </div>
+                                <p class="text-gray-600">Fecha: <span class="font-semibold">${order.date}</span></p>
+                                <p class="text-gray-600">Total: <span class="font-bold">${order.total} €</span></p>
+                                <ul class="list-disc list-inside text-sm text-gray-500 mt-2">
+                                    ${order.items.map(item => `
+                                        <li>${item.name} (x${item.quantity})</li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        `).join('') : `
+                        <div class="text-center p-10 bg-gray-50 rounded-xl shadow-inner">
+                            <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500 font-semibold">Aún no has realizado ningún pedido.</p>
+                        </div>
+                        `}
+                    </div>
+                `;
+            };
+
+            const renderCameraPage = () => {
+                appContent.innerHTML = `
+                    <h2 class="text-2xl font-bold text-[#1e293b] mb-6">Cámaras en Vivo</h2>
+                    <div class="bg-white p-5 rounded-xl shadow-md text-center">
+                        <p class="text-gray-500">Aquí podrás ver a tu perro en tiempo real.</p>
+                        <div class="relative w-full aspect-video rounded-lg overflow-hidden mt-4 shadow-sm">
+                            <iframe class="app-video" src="https://www.youtube.com/embed/ufJg3eIaDAU?autoplay=1&loop=1&playlist=ufJg3eIaDAU&mute=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                        <p class="text-sm text-gray-400 mt-2">Acceso a la cámara de Boby.</p>
+                    </div>
+                `;
+            };
+
+            // --- Event Listeners for Tabs ---
+            homeTab.addEventListener('click', renderHomePage);
+            bookingsTab.addEventListener('click', renderBookingsPage);
+            storeTab.addEventListener('click', renderStorePage);
+            ordersTab.addEventListener('click', renderOrdersPage);
+            cameraTab.addEventListener('click', renderCameraPage);
+
+            // --- Initial Page Load ---
+            renderHomePage();
+        });
+    </script>
+
+</body>
+</html>
